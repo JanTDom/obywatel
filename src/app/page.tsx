@@ -16,6 +16,7 @@ import {
   FolderOpen,
   ArrowRight,
   Eye,
+  Check,
 } from 'lucide-react';
 import { LocalVault } from '../domain/vault';
 import { extractFieldsFromText } from '../domain/extractor';
@@ -342,7 +343,7 @@ export default function ObywatelApp() {
                         : 'bg-slate-200 text-slate-500'
                     }`}
                   >
-                    {isDone ? '✓' : s.num}
+                    {isDone ? <Check className="w-3 h-3 stroke-[3]" /> : s.num}
                   </span>
                   <span>{s.title}</span>
                 </button>
@@ -617,7 +618,7 @@ export default function ObywatelApp() {
               <ul className="text-xs space-y-1 font-mono text-slate-800">
                 {activeDeadline.calculationLog.map((logLine, idx) => (
                   <li key={idx} className="flex items-start gap-2">
-                    <span className="text-slate-400">›</span>
+                    <span className="text-slate-400">-</span>
                     <span>{logLine}</span>
                   </li>
                 ))}
@@ -943,7 +944,7 @@ export default function ObywatelApp() {
             <span><strong>Wersje dowodów:</strong> {vault.documentVersions.size}</span>
           </div>
           <div>
-            <span className="text-slate-500 font-mono text-[11px]">Local-First • Web Crypto API • WCAG 2.2 AA</span>
+            <span className="text-slate-500 font-mono text-[11px]">Local-First | Web Crypto API | WCAG 2.2 AA</span>
           </div>
         </div>
       </section>
