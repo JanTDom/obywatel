@@ -97,7 +97,12 @@ export default function ObywatelApp() {
     ? cases[0]
     : null;
 
-  const currentAnalysis = currentCase ? vault.legalAnalyses.get(currentCase.id) || null : null;
+  const currentAnalysis = currentCase
+    ? vault.legalAnalyses.get(currentCase.id) ||
+      vault.legalAnalyses.get(`analysis-${currentCase.id}`) ||
+      Array.from(vault.legalAnalyses.values()).find((a) => a.caseId === currentCase.id) ||
+      null
+    : null;
   const currentActionPlan = currentAnalysis?.actionPlan || [];
 
   // 1. Initial scan on mount

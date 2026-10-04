@@ -262,6 +262,7 @@ export class LocalVault {
 
   public setLegalAnalysis(analysis: LegalAnalysis): void {
     this.legalAnalyses.set(analysis.id, analysis);
+    this.legalAnalyses.set(analysis.caseId, analysis);
   }
 
   public setLetter(letter: LetterDraft): void {
