@@ -20,6 +20,7 @@ import {
   formatLetterPlainText,
   exportLetterForPrinting,
 } from '../../domain/letter-engine';
+import { ElectronicGatewayConnector } from '../../domain/electronic-gateway';
 
 interface LettersViewProps {
   cases: Case[];
@@ -51,6 +52,7 @@ export function LettersView({
   const [receiptChannel, setReceiptChannel] = useState('Poczta Polska (polecony za zwrotnym potwierdzeniem)');
   const [submissionDate, setSubmissionDate] = useState('2026-09-25');
   const [copyFeedback, setCopyFeedback] = useState(false);
+  const [purdeXml, setPurdeXml] = useState<string | null>(null);
 
   const caseLetters = letters.filter((l) => !currentCaseId || l.caseId === currentCaseId);
   const activeLetter = letters.find((l) => l.id === selectedLetterId) || caseLetters[0];
@@ -100,6 +102,28 @@ export function LettersView({
       demands = ['Zapłata kwoty roszczenia głównego wraz z ustawowymi odsetkami w terminie 7 dni'];
       factualBasis = 'Zobowiązanie wynikające z zawartej umowy nie zostało uregulowane w terminie.';
       legalJustification = 'Art. 455 i art. 476 ustawy z dnia 23 kwietnia 1964 r. - Kodeks cywilny.';
+    } else if (selectedLetterType === 'odwolanie_podatkowe') {
+      title = `Odwołanie od decyzji podatkowej`;
+      recipientName = 'Dyrektor Izby Administracji Skarbowej w Warszawie';
+      intermediaryAuthority = currentCase.authorityOrOpponentName;
+      recipientAddress = `za pośrednictwem: ${currentCase.authorityOrOpponentName}`;
+      demands = ['Uchylenie zaskarżonej decyzji w całości i umorzenie postępowania podatkowego'];
+      factualBasis = 'Organ podatkowy bezzasadnie zakwestionował koszty uzyskania przychodów oraz prawo do odliczenia VAT.';
+      legalJustification = 'Art. 220 § 1 i art. 233 § 1 pkt 2 lit. a ustawy z dnia 29 sierpnia 1997 r. - Ordynacja podatkowa.';
+    } else if (selectedLetterType === 'odwolanie_zus') {
+      title = `Odwołanie od decyzji ZUS`;
+      recipientName = 'Sąd Okręgowy w Warszawie - Sąd Pracy i Ubezpieczeń Społecznych';
+      intermediaryAuthority = currentCase.authorityOrOpponentName;
+      recipientAddress = `za pośrednictwem: ${currentCase.authorityOrOpponentName}`;
+      demands = ['Zmiana zaskarżonej decyzji i przyznanie ubezpieczonemu prawa do świadczenia'];
+      factualBasis = 'Ubezpieczony spełnił wszystkie przesłanki ustawowe warunkujące nabycie prawa do świadczenia.';
+      legalJustification = 'Art. 83 ust. 2 ustawy o systemie ubezpieczeń społecznych w zw. z art. 477^9 Kodeksu postępowania cywilnego.';
+    } else if (selectedLetterType === 'wezwanie_pracownicze') {
+      title = `Wniosek o sprostowanie świadectwa pracy`;
+      recipientName = currentCase.authorityOrOpponentName;
+      demands = ['Sprostowanie treści świadectwa pracy w punkcie dotyczącym trybu rozwiązania stosunku pracy'];
+      factualBasis = 'Pracodawca błędnie wskazał jednostronne rozwiązanie, pomijając zgodne porozumienie stron.';
+      legalJustification = 'Art. 97 § 2^1 ustawy z dnia 26 czerwca 1974 r. - Kodeks pracy.';
     }
 
     const draft = createModularLetterDraft({
@@ -161,6 +185,27 @@ export function LettersView({
     setReceiptNumber('');
   };
 
+  const handleGeneratePurdeEnvelope = async () => {
+    if (!activeLetter || !currentCase) return;
+    const connector = new ElectronicGatewayConnector();
+    const plainText = formatLetterPlainText(activeLetter);
+    const envelope = await connector.createPurdeEnvelope({
+      senderName: activeLetter.sender?.placeholderName || 'Jan Kowalski',
+      recipientAdeAddress: 'AE:PL-12345-67890-URZAD-01',
+      recipientName: activeLetter.recipient?.name || currentCase.authorityOrOpponentName,
+      caseSignature: activeLetter.caseSignature || 'ZNAK-BRAK',
+      subject: activeLetter.title,
+      attachments: [
+        {
+          fileName: `${activeLetter.letterType}.txt`,
+          content: plainText,
+          mimeType: 'text/plain',
+        },
+      ],
+    });
+    setPurdeXml(envelope.xmlPayload);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -210,6 +255,9 @@ export function LettersView({
               <option value="ponaglenie">Ponaglenie na bezczynność (KPA art. 37)</option>
               <option value="reklamacja_konsumencka">Reklamacja konsumencka (UPK)</option>
               <option value="wezwanie_do_zaplaty">Przedsądowe wezwanie do zapłaty (KC)</option>
+              <option value="odwolanie_podatkowe">Odwołanie od decyzji podatkowej (Ordynacja podatkowa)</option>
+              <option value="odwolanie_zus">Odwołanie od decyzji ZUS (Sąd Pracy i US)</option>
+              <option value="wezwanie_pracownicze">Sprostowanie świadectwa pracy (Kodeks pracy)</option>
             </select>
 
             <button
@@ -273,13 +321,41 @@ export function LettersView({
                   <button
                     type="button"
                     onClick={handleExportPrint}
-                    className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-3.5 py-1.5 rounded-lg transition-colors shadow-sm"
+                    className="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors shadow-sm"
                   >
                     <Printer className="w-3.5 h-3.5" />
                     <span>Drukuj / Eksportuj</span>
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={handleGeneratePurdeEnvelope}
+                    className="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors shadow-sm"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Pakiet PURDE XML</span>
+                  </button>
                 </div>
               </div>
+
+              {/* PURDE XML Preview Box */}
+              {purdeXml && (
+                <div className="p-4 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-indigo-950">
+                    <span>Ustrukturyzowana koperta e-Doręczenia (standard PURDE)</span>
+                    <button
+                      type="button"
+                      onClick={() => setPurdeXml(null)}
+                      className="text-[11px] text-indigo-700 hover:text-indigo-900"
+                    >
+                      Ukryj XML
+                    </button>
+                  </div>
+                  <div className="p-2.5 bg-slate-900 text-slate-200 font-mono text-[10px] rounded-lg max-h-36 overflow-y-auto whitespace-pre-wrap">
+                    {purdeXml}
+                  </div>
+                </div>
+              )}
 
               {/* SHA-256 seal badge if exported */}
               {activeLetter.exportSha256 && (

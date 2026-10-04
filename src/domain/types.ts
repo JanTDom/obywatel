@@ -20,6 +20,9 @@ export type ProcedureType =
   | 'contract_dispute'
   | 'complaint_or_petition'
   | 'social_interest'
+  | 'tax_dispute'
+  | 'social_insurance'
+  | 'labor_dispute'
   | 'other';
 
 export type OpponentType =
@@ -333,6 +336,9 @@ export type LetterType =
   | 'ponaglenie'
   | 'reklamacja_konsumencka'
   | 'wezwanie_do_zaplaty'
+  | 'odwolanie_podatkowe'
+  | 'odwolanie_zus'
+  | 'wezwanie_pracownicze'
   | 'skarga';
 
 export interface DiskFileInfo {

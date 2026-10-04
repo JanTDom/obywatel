@@ -39,6 +39,8 @@ import { OFFICIAL_LEGAL_SOURCES } from '../domain/legal-knowledge';
 import { buildCompleteCaseAnalysis } from '../domain/case-analysis';
 import { IntelligentClassifier } from '../domain/intelligent-classifier';
 import { EncryptedContainer } from '../domain/crypto';
+import { LocalOcrEngine } from '../domain/ocr-engine';
+import { E2EESyncEngine } from '../domain/sync-engine';
 
 export default function ObywatelApp() {
   const [vault, setVault] = useState<LocalVault>(() => new LocalVault('sejf-lokalny-01'));
@@ -515,6 +517,78 @@ export default function ObywatelApp() {
     };
   };
 
+  // 11. Lokalny silnik OCR i korekty
+  const handleRunLocalOcr = async (docId: string) => {
+    const doc = vault.documents.get(docId);
+    if (!doc) return;
+    const activeVer = vault.documentVersions.get(doc.activeVersionId);
+    if (!activeVer) return;
+
+    const ocrEngine = new LocalOcrEngine();
+    const result = await ocrEngine.processImageOrScan({
+      fileName: doc.originalFileName,
+      mimeType: doc.mimeType,
+      rawPayload: activeVer.textPayload || '',
+    });
+
+    const existingCount = Array.from(vault.documentVersions.values()).filter((v) => v.documentId === doc.id).length;
+    const newVer = ocrEngine.createOcrVersion(doc, result, existingCount + 1);
+    vault.documentVersions.set(newVer.id, newVer);
+    doc.activeVersionId = newVer.id;
+    setGlobalNotice(`Wykonano lokalny OCR dla ${doc.originalFileName}. Jakość rozpoznania: ${result.averageConfidence}%.`);
+    triggerRefresh();
+  };
+
+  const handleSaveCorrection = async (docId: string, correctedText: string, note: string) => {
+    await vault.addDocumentVersion({
+      documentId: docId,
+      kind: 'user_corrected',
+      textPayload: correctedText,
+      toolOrAuthor: `Korekta użytkownika: ${note}`,
+    });
+    setGlobalNotice(`Zapisano skorygowaną wersję dokumentu bez modyfikacji oryginału.`);
+    triggerRefresh();
+  };
+
+  const handleConfirmField = (fieldId: string, confirmedValue: string) => {
+    vault.confirmField(fieldId, confirmedValue);
+    setGlobalNotice(`Potwierdzono poprawność pola.`);
+    triggerRefresh();
+  };
+
+  // 12. Bezpieczna synchronizacja chmurowa E2EE
+  const handleSyncToServer = async (passphrase: string) => {
+    const syncEngine = new E2EESyncEngine();
+    const manifest = vault.toManifest();
+    const payload = await syncEngine.prepareSyncPayload(manifest, passphrase);
+
+    const res = await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.error || 'Błąd synchronizacji serwera');
+    }
+    return { recordId: payload.recordId, version: payload.version };
+  };
+
+  const handleSyncFromServer = async (passphrase: string) => {
+    const syncEngine = new E2EESyncEngine();
+    const recordId = `sync-${vault.vaultId}`;
+    const res = await fetch(`/api/sync?recordId=${recordId}`);
+    if (!res.ok) {
+      throw new Error('Brak rekordu synchronizacji na serwerze lub odmowa dostępu.');
+    }
+    const data = await res.json();
+    const restoredManifest = await syncEngine.decryptSyncPayload(data.record, passphrase);
+    const restoredVault = LocalVault.fromManifest(restoredManifest);
+    setVault(restoredVault);
+    return { restoredCount: restoredVault.cases.size };
+  };
+
   return (
     <div className="min-h-screen bg-slate-100/70 text-slate-900 flex flex-col font-sans">
       {/* Top Header Bar */}
@@ -617,8 +691,12 @@ export default function ObywatelApp() {
             documents={documents}
             versions={versions}
             diskFiles={diskFiles}
+            extractedFields={Array.from(vault.extractedFields.values())}
             onScanDisk={handleScanDisk}
             onSplitMultiPageScan={handleSplitMultiPageScan}
+            onRunLocalOcr={handleRunLocalOcr}
+            onSaveCorrection={handleSaveCorrection}
+            onConfirmField={handleConfirmField}
             isScanning={isScanningDisk}
           />
         )}
@@ -711,6 +789,9 @@ export default function ObywatelApp() {
               documentCount: documents.length,
               versionCount: versions.length,
             }}
+            documents={documents}
+            onSyncToServer={handleSyncToServer}
+            onSyncFromServer={handleSyncFromServer}
           />
         )}
       </main>

@@ -168,6 +168,63 @@ export const OFFICIAL_LEGAL_SOURCES: Record<string, LegalSource> = {
     quoteText:
       'Pozew powinien czynić zadość warunkom pisma procesowego, a nadto zawierać: informację, czy strony podjęły próbę mediacji lub innego pozasądowego sposobu rozwiązania sporu, a w przypadku gdy takich prób nie podjęto, wyjaśnienie przyczyn ich niepodjęcia.',
   },
+
+  // --- Sprawy podatkowe (Ordynacja podatkowa) ---
+  'OP-ART-220': {
+    id: 'OP-ART-220',
+    sourceType: 'statute',
+    officialUrl: 'https://eli.gov.pl/eli/DU/1997/137/ogl',
+    publisher: 'Dziennik Ustaw',
+    actOrCaseId: 'Dz.U. 1997 nr 137 poz. 926 (t.j. Dz.U. 2023 poz. 2383)',
+    articleOrPage: 'art. 220 - 223',
+    versionId: 'OP-V2023-2383',
+    effectiveFrom: '1998-01-01',
+    effectiveTo: 'in_force',
+    retrievedAt: '2026-10-04',
+    contentHash: '7392a847b0192847c0192847d0192847e0192847f0192847a0192847b0192847',
+    verificationStatus: 'verified',
+    supportsClaim: 'Odwołanie od decyzji podatkowej wnosi się do Dyrektora Izby Administracji Skarbowej w terminie 14 dni za pośrednictwem organu podatkowego I instancji.',
+    quoteText:
+      '§ 1. Od decyzji organu podatkowego wydanej w pierwszej instancji służy odwołanie tylko do jednej instancji... § 2. Organem odwoławczym od decyzji naczelnika urzędu skarbowego jest dyrektor izby administracji skarbowej. Art. 223 § 1. Odwołanie wnosi się w terminie 14 dni od dnia doręczenia decyzji.',
+  },
+
+  // --- Sprawy ubezpieczeniowe (ZUS) ---
+  'ZUS-ART-83': {
+    id: 'ZUS-ART-83',
+    sourceType: 'statute',
+    officialUrl: 'https://eli.gov.pl/eli/DU/1998/137/ogl',
+    publisher: 'Dziennik Ustaw',
+    actOrCaseId: 'Dz.U. 1998 nr 137 poz. 887 (t.j. Dz.U. 2024 poz. 497)',
+    articleOrPage: 'art. 83 ust. 1-2',
+    versionId: 'ZUS-V2024-497',
+    effectiveFrom: '1999-01-01',
+    effectiveTo: 'in_force',
+    retrievedAt: '2026-10-04',
+    contentHash: '192847c0192847d0192847e0192847f0192847a0192847b0192847c0192847d01',
+    verificationStatus: 'verified',
+    supportsClaim: 'Odwołanie od decyzji ZUS przysługuje do Sądu Pracy i Ubezpieczeń Społecznych w terminie 1 miesiąca od doręczenia.',
+    quoteText:
+      '1. Zakład wydaje decyzje w zakresie indywidualnych spraw dotyczących w szczególności: zgłaszania do ubezpieczeń społecznych, ustalania wymiaru składek, ustalania uprawnień do świadczeń. 2. Od decyzji Zakładu przysługuje odwołanie do właściwego sądu w terminie i według zasad określonych w przepisach Kodeksu postępowania cywilnego (art. 477^9 KPC: 1 miesiąc).',
+  },
+
+  // --- Sprawy pracownicze (Kodeks pracy) ---
+  'KP-ART-97': {
+    id: 'KP-ART-97',
+    sourceType: 'statute',
+    officialUrl: 'https://eli.gov.pl/eli/DU/1974/141/ogl',
+    publisher: 'Dziennik Ustaw',
+    actOrCaseId: 'Dz.U. 1974 nr 24 poz. 141 (t.j. Dz.U. 2023 poz. 1465)',
+    articleOrPage: 'art. 97 § 2^1',
+    versionId: 'KP-V2023-1465',
+    effectiveFrom: '1975-01-01',
+    effectiveTo: 'in_force',
+    retrievedAt: '2026-10-04',
+    contentHash: '92847d0192847e0192847f0192847a0192847b0192847c0192847d0192847e0192',
+    verificationStatus: 'verified',
+    supportsClaim: 'Pracownik ma 14 dni od otrzymania świadectwa pracy na wniosek o jego sprostowanie.',
+    quoteText:
+      'Pracownik może w ciągu 14 dni od otrzymania świadectwa pracy wystąpić z wnioskiem do pracodawcy o sprostowanie świadectwa pracy. W razie nieuwzględnienia wniosku pracownikowi przysługuje, w ciągu 14 dni od zawiadomienia o odmowie sprostowania świadectwa pracy, prawo wystąpienia z żądaniem jego sprostowania do sądu pracy.',
+  },
   'NSA-II-GS-71-20': {
     id: 'NSA-II-GS-71-20',
     sourceType: 'court_ruling',

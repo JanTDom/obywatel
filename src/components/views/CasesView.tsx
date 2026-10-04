@@ -87,6 +87,12 @@ export function CasesView({
     switch (type) {
       case 'administrative':
         return 'Postępowanie administracyjne';
+      case 'tax_dispute':
+        return 'Spór podatkowy (Ordynacja)';
+      case 'social_insurance':
+        return 'Ubezpieczenia społeczne (ZUS)';
+      case 'labor_dispute':
+        return 'Spór pracowniczy (Kodeks pracy)';
       case 'consumer_dispute':
         return 'Spór konsumencki';
       case 'contract_dispute':
@@ -130,6 +136,9 @@ export function CasesView({
         {[
           { id: 'all', label: 'Wszystkie sprawy' },
           { id: 'administrative', label: 'Administracyjne' },
+          { id: 'tax_dispute', label: 'Podatkowe' },
+          { id: 'social_insurance', label: 'ZUS' },
+          { id: 'labor_dispute', label: 'Pracownicze' },
           { id: 'consumer_dispute', label: 'Konsumenckie' },
           { id: 'contract_dispute', label: 'Umowy cywilne' },
           { id: 'public_information', label: 'Informacja publiczna' },
@@ -284,6 +293,9 @@ export function CasesView({
                     className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
                   >
                     <option value="administrative">Administracyjna (KPA)</option>
+                    <option value="tax_dispute">Podatkowa (Ordynacja podatkowa)</option>
+                    <option value="social_insurance">Ubezpieczenia społeczne (ZUS)</option>
+                    <option value="labor_dispute">Pracownicza (Kodeks pracy)</option>
                     <option value="consumer_dispute">Reklamacja / Konsumencka</option>
                     <option value="contract_dispute">Spór z umowy (KC)</option>
                     <option value="public_information">Dostęp do informacji publicznej</option>

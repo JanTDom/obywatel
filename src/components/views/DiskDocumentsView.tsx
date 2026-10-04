@@ -16,7 +16,8 @@ import {
   ArrowRight,
   ExternalLink,
 } from 'lucide-react';
-import { DocumentRecord, DocumentVersion, DiskFileInfo, Case } from '../../domain/types';
+import { DocumentRecord, DocumentVersion, DiskFileInfo, Case, ExtractedField } from '../../domain/types';
+import { SideBySideViewer } from '../document/SideBySideViewer';
 
 interface DiskDocumentsViewProps {
   cases: Case[];
@@ -24,8 +25,12 @@ interface DiskDocumentsViewProps {
   documents: DocumentRecord[];
   versions: DocumentVersion[];
   diskFiles: DiskFileInfo[];
+  extractedFields?: ExtractedField[];
   onScanDisk: () => Promise<void>;
   onSplitMultiPageScan: (docId: string) => Promise<void>;
+  onRunLocalOcr?: (docId: string) => Promise<void>;
+  onSaveCorrection?: (docId: string, text: string, note: string) => Promise<void>;
+  onConfirmField?: (fieldId: string, val: string) => void;
   isScanning: boolean;
 }
 
@@ -35,12 +40,18 @@ export function DiskDocumentsView({
   documents,
   versions,
   diskFiles,
+  extractedFields = [],
   onScanDisk,
   onSplitMultiPageScan,
+  onRunLocalOcr,
+  onSaveCorrection,
+  onConfirmField,
   isScanning,
 }: DiskDocumentsViewProps) {
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [filterCaseId, setFilterCaseId] = useState<string>(activeCaseId || 'all');
+  const [isSideBySideOpen, setIsSideBySideOpen] = useState(false);
+  const [isOcrProcessing, setIsOcrProcessing] = useState(false);
 
   const filteredDocuments = documents.filter((d) => {
     if (filterCaseId === 'all') return true;
@@ -254,6 +265,37 @@ export function DiskDocumentsView({
                 </div>
               </div>
 
+              {/* Verification & OCR Actions */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsSideBySideOpen(true)}
+                  className="inline-flex items-center justify-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-3 py-2 rounded-xl transition-colors shadow-sm"
+                >
+                  <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Oryginał obok OCR</span>
+                </button>
+
+                {onRunLocalOcr && (
+                  <button
+                    type="button"
+                    disabled={isOcrProcessing}
+                    onClick={async () => {
+                      setIsOcrProcessing(true);
+                      try {
+                        await onRunLocalOcr(selectedDoc.id);
+                      } finally {
+                        setIsOcrProcessing(false);
+                      }
+                    }}
+                    className="inline-flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold px-3 py-2 rounded-xl border border-slate-300 transition-colors disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isOcrProcessing ? 'animate-spin' : ''}`} />
+                    <span>{isOcrProcessing ? 'OCR w toku...' : 'Lokalny OCR'}</span>
+                  </button>
+                )}
+              </div>
+
               {/* Multi-page Scan Splitting Action */}
               {selectedDoc.originalFileName.includes('wielostronicowy') && (
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-2">
@@ -321,13 +363,45 @@ export function DiskDocumentsView({
               <FileCode className="w-8 h-8 text-slate-400 mx-auto" />
               <h3 className="font-bold text-slate-800 mt-2">Wybierz dokument z listy</h3>
               <p className="mt-1">
-                Kliknij dowolny plik po lewej stronie, aby wyświetlić sumę kontrolną SHA-256,
-                ścieżkę na dysku oraz podgląd odczytanej treści.
+                Wybierz dokument z lewego panelu, aby sprawdzić historię wersji, integralność i zweryfikować odczytaną treść.
               </p>
             </div>
           )}
         </div>
       </div>
+
+      {/* Side-by-Side Modal */}
+      {isSideBySideOpen && selectedDoc && activeVersion && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto border border-slate-300">
+            <SideBySideViewer
+              document={selectedDoc}
+              originalVersion={selectedVersions[0] || activeVersion}
+              activeVersion={activeVersion}
+              extractedFields={extractedFields.filter((f) => f.documentId === selectedDoc.id)}
+              onSaveCorrection={async (text, note) => {
+                if (onSaveCorrection) {
+                  await onSaveCorrection(selectedDoc.id, text, note);
+                }
+              }}
+              onConfirmField={(fieldId, val) => {
+                if (onConfirmField) {
+                  onConfirmField(fieldId, val);
+                }
+              }}
+            />
+            <div className="p-3 bg-slate-100 border-t border-slate-200 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsSideBySideOpen(false)}
+                className="text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 px-4 py-2 rounded-xl transition-colors"
+              >
+                Zamknij podgląd weryfikacji
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

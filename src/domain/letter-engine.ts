@@ -187,6 +187,92 @@ export function createModularLetterDraft(input: CreateLetterDraftInput): LetterD
         verificationDetail: 'Podano prawidłowy numer rachunku wierzyciela.',
       }
     );
+  } else if (letterType === 'odwolanie_podatkowe') {
+    checklist.push(
+      {
+        id: 'chk-tax-authority',
+        item: 'Właściwy Dyrektor Izby Administracji Skarbowej',
+        checked: true,
+        isMandatory: true,
+        verificationDetail: `Adresat: ${recipientName}, za pośrednictwem: ${intermediaryAuthority || 'Naczelnika Urzędu Skarbowego'}.`,
+      },
+      {
+        id: 'chk-tax-signature',
+        item: 'Znak zaskarżanej decyzji podatkowej',
+        checked: Boolean(caseSignature),
+        isMandatory: true,
+        verificationDetail: `Znak decyzji: ${caseSignature || 'Wymaga uzupełnienia'}.`,
+      },
+      {
+        id: 'chk-tax-charges',
+        item: 'Zarzuty naruszenia przepisów prawa podatkowego',
+        checked: Boolean(legalJustification),
+        isMandatory: true,
+        verificationDetail: 'Zarzuty określające istotę i zakres żądania (art. 222 Ordynacji podatkowej).',
+      },
+      {
+        id: 'chk-tax-deadline',
+        item: 'Termin 14 dni od dnia doręczenia decyzji',
+        checked: false,
+        isMandatory: true,
+        verificationDetail: 'Wniesienie w terminie 14 dni (art. 223 Ordynacji podatkowej).',
+      }
+    );
+  } else if (letterType === 'odwolanie_zus') {
+    checklist.push(
+      {
+        id: 'chk-zus-court',
+        item: 'Oznaczenie Sądu Pracy i Ubezpieczeń Społecznych',
+        checked: true,
+        isMandatory: true,
+        verificationDetail: `Sąd właściwy za pośrednictwem: ${intermediaryAuthority || 'Oddziału ZUS'}.`,
+      },
+      {
+        id: 'chk-zus-decision',
+        item: 'Numer zaskarżanej decyzji ZUS',
+        checked: Boolean(caseSignature),
+        isMandatory: true,
+        verificationDetail: `Numer decyzji: ${caseSignature || 'Wymaga uzupełnienia'}.`,
+      },
+      {
+        id: 'chk-zus-deadline',
+        item: 'Termin 1 miesiąca od doręczenia decyzji ZUS',
+        checked: false,
+        isMandatory: true,
+        verificationDetail: 'Zgodnie z art. 477^9 KPC termin na wniesienie odwołania wynosi 1 miesiąc.',
+      },
+      {
+        id: 'chk-zus-fee',
+        item: 'Brak opłaty sądowej (zwolnienie ustawowe)',
+        checked: true,
+        isMandatory: false,
+        verificationDetail: 'Sprawy z zakresu ubezpieczeń społecznych są co do zasady wolne od opłat sądowych.',
+      }
+    );
+  } else if (letterType === 'wezwanie_pracownicze') {
+    checklist.push(
+      {
+        id: 'chk-labor-employer',
+        item: 'Oznaczenie pracodawcy',
+        checked: true,
+        isMandatory: true,
+        verificationDetail: `Pracodawca: ${recipientName}.`,
+      },
+      {
+        id: 'chk-labor-demands',
+        item: 'Zakres sprostowania lub żądana kwota',
+        checked: demands.length > 0,
+        isMandatory: true,
+        verificationDetail: 'Wskazano błędne zapisy świadectwa lub zaległe składniki wynagrodzenia.',
+      },
+      {
+        id: 'chk-labor-deadline',
+        item: 'Termin 14 dni na wniosek o sprostowanie świadectwa pracy',
+        checked: false,
+        isMandatory: true,
+        verificationDetail: 'Zgodnie z art. 97 § 2^1 Kodeksu pracy termin wynosi 14 dni.',
+      }
+    );
   } else {
     checklist.push({
       id: 'chk-gen-sign',
