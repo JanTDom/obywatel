@@ -1,6 +1,7 @@
 /**
- * Obywatel - Domain Types
- * Strict domain modeling conforming to docs/DATA_MODEL.md, docs/PRIVACY.md, docs/LEGAL_KNOWLEDGE.md
+ * Obywatel - Comprehensive Domain Types
+ * Conforms to docs/DATA_MODEL.md, docs/PRIVACY.md, docs/LEGAL_KNOWLEDGE.md, docs/PRODUCT.md
+ * and ADR 0002 for Real Disk Storage and Modular Procedures.
  */
 
 export type CaseStatus =
@@ -15,15 +16,26 @@ export type CaseStatus =
 export type ProcedureType =
   | 'administrative'
   | 'public_information'
+  | 'consumer_dispute'
+  | 'contract_dispute'
   | 'complaint_or_petition'
+  | 'social_interest'
   | 'other';
 
+export type OpponentType =
+  | 'public_authority'
+  | 'company'
+  | 'individual'
+  | 'institution';
+
 export interface Case {
-  id: string;
+  id: string; // e.g. "S-0001"
+  folderName: string; // e.g. "S-0001_Pozwolenie_na_budowe"
   title: string;
   goalDescription: string;
   procedureType: ProcedureType;
-  authorityName: string;
+  opponentType: OpponentType;
+  authorityOrOpponentName: string;
   authorityJurisdictionReason: string;
   status: CaseStatus;
   nextAction: string;
@@ -38,17 +50,32 @@ export type DocumentType =
   | 'notification'
   | 'summons'
   | 'appeal'
+  | 'contract'
+  | 'complaint'
+  | 'invoice'
   | 'proof_of_delivery'
   | 'other';
 
-export type CorrespondenceDirection = 'incoming' | 'outgoing';
+export type CorrespondenceDirection = 'incoming' | 'outgoing' | 'internal';
 
 export type DocumentOrigin =
   | 'scan'
   | 'pdf_digital'
   | 'photo'
   | 'citizen_draft'
-  | 'official_upo';
+  | 'official_upo'
+  | 'disk_file';
+
+export type CaseSubfolder =
+  | '00_Plan_i_opis'
+  | '01_Otrzymane'
+  | '02_Wyslane'
+  | '03_Dowody'
+  | '04_Potwierdzenia'
+  | '05_Projekty_pism'
+  | '06_Prawo_i_analizy'
+  | '07_Wynik_sprawy'
+  | 'Do_uporzadkowania';
 
 export interface DocumentRecord {
   id: string;
@@ -60,8 +87,11 @@ export interface DocumentRecord {
   mimeType: string;
   fileSize: number;
   originalSha256: string;
+  diskRelativePath?: string; // e.g. "Moje_sprawy/S-0001_Decyzja/01_Otrzymane/pismo.pdf"
+  subfolder?: CaseSubfolder;
   createdAt: string;
   activeVersionId: string;
+  isMissingOnDisk?: boolean;
 }
 
 export type DocumentVersionKind =
@@ -70,7 +100,8 @@ export type DocumentVersionKind =
   | 'user_corrected'
   | 'draft'
   | 'exported_pdf'
-  | 'redacted';
+  | 'redacted'
+  | 'logical_subdoc';
 
 export interface DocumentVersion {
   id: string;
@@ -82,6 +113,27 @@ export interface DocumentVersion {
   textPayload?: string;
   createdAt: string;
   toolOrAuthor: string;
+  pageRange?: { start: number; end: number };
+}
+
+export type RelationType =
+  | 'odpowiada_na'
+  | 'zalacznik_do'
+  | 'potwierdza_zlozenie'
+  | 'potwierdza_doreczenie'
+  | 'nowa_wersja'
+  | 'wspiera_twierdzenie'
+  | 'podwaza_twierdzenie'
+  | 'to_samo_zdarzenie';
+
+export interface DocumentRelation {
+  id: string;
+  sourceDocumentId: string;
+  targetDocumentId: string;
+  relationType: RelationType;
+  rationale: string;
+  isConfirmedByUser: boolean;
+  createdAt: string;
 }
 
 export type FieldStatus = 'unknown' | 'proposed' | 'confirmed' | 'disputed';
@@ -89,11 +141,14 @@ export type FieldStatus = 'unknown' | 'proposed' | 'confirmed' | 'disputed';
 export type ExtractedFieldName =
   | 'case_signature'
   | 'issuing_authority'
+  | 'opponent_name'
   | 'document_date'
   | 'delivery_date'
   | 'appeal_deadline_days'
   | 'appeal_body'
-  | 'instruction_text';
+  | 'instruction_text'
+  | 'contract_number'
+  | 'disputed_amount';
 
 export interface ExtractedField {
   id: string;
@@ -117,7 +172,9 @@ export type EventType =
   | 'document_sent'
   | 'document_delivered'
   | 'citizen_action'
-  | 'deadline_calculated';
+  | 'deadline_calculated'
+  | 'complaint_filed'
+  | 'payment_due';
 
 export type DatePrecision = 'exact' | 'uncertain' | 'unknown';
 
@@ -164,8 +221,8 @@ export interface LegalSource {
   sourceType: LegalSourceType;
   officialUrl: string;
   publisher: string;
-  actOrCaseId: string; // np. Dz.U. 1960 nr 30 poz. 168
-  articleOrPage: string; // np. art. 57 § 1-4
+  actOrCaseId: string; // e.g. Dz.U. 1960 nr 30 poz. 168
+  articleOrPage: string; // e.g. art. 57 § 1-4
   versionId: string;
   effectiveFrom: string;
   effectiveTo: string | 'in_force';
@@ -174,6 +231,51 @@ export interface LegalSource {
   verificationStatus: 'verified' | 'unverified' | 'superseded' | 'disputed';
   supportsClaim: string;
   quoteText: string;
+}
+
+export interface CaseParty {
+  id: string;
+  name: string;
+  role: 'citizen' | 'opponent' | 'authority' | 'witness' | 'expert';
+  stance: string;
+  identifiedInDocId?: string;
+}
+
+export interface CaseDemand {
+  id: string;
+  title: string;
+  description: string;
+  status: 'pending' | 'granted' | 'rejected' | 'disputed';
+  legalBasis?: string;
+}
+
+export interface EvidenceMatrixItem {
+  id: string;
+  fact: string;
+  supportedByDocId?: string;
+  supportedBySnippet?: string;
+  contradictedByDocId?: string;
+  contradictedBySnippet?: string;
+  confidence: 'proven' | 'probable' | 'disputed' | 'unproven';
+}
+
+export interface ActionPlanStep {
+  id: string;
+  stepNumber: number;
+  title: string;
+  why: string;
+  requiredDocuments: string[];
+  decisionNeeded: string;
+  deadlineNotice: string;
+  completionCriteria: string;
+  status: 'pending' | 'in_progress' | 'completed';
+}
+
+export interface MissingInformationItem {
+  id: string;
+  question: string;
+  neededDocType: string;
+  whyImportant: string;
 }
 
 export interface LegalAnalysis {
@@ -202,6 +304,11 @@ export interface LegalAnalysis {
   }[];
   counterArguments: string[];
   verificationStatus: 'verified' | 'requires_lawyer' | 'unverified';
+  parties: CaseParty[];
+  demands: CaseDemand[];
+  evidenceMatrix: EvidenceMatrixItem[];
+  missingInformation: MissingInformationItem[];
+  actionPlan: ActionPlanStep[];
 }
 
 export type LetterStatus =
@@ -220,11 +327,27 @@ export interface LetterChecklistItem {
   verificationDetail: string;
 }
 
+export type LetterType =
+  | 'odwolanie'
+  | 'wniosek_o_informacje'
+  | 'ponaglenie'
+  | 'reklamacja_konsumencka'
+  | 'wezwanie_do_zaplaty'
+  | 'skarga';
+
+export interface DiskFileInfo {
+  name: string;
+  relativePath: string;
+  size: number;
+  modifiedAt: string;
+  isDirectory: boolean;
+}
+
 export interface LetterDraft {
   id: string;
   caseId: string;
   title: string;
-  letterType: 'odwolanie' | 'wniosek_o_informacje' | 'ponaglenie' | 'skarga';
+  letterType: LetterType;
   recipient: {
     name: string;
     addressOrChannel: string;
@@ -248,6 +371,9 @@ export interface LetterDraft {
   checklist: LetterChecklistItem[];
   exportedContent?: string;
   exportSha256?: string;
+  deliveryReceiptNumber?: string;
+  deliveryProofOrigin?: string;
+  deliveryDate?: string;
   userSubmissionReceipt?: {
     channel: string;
     submissionDate: string;
@@ -256,9 +382,49 @@ export interface LetterDraft {
   };
 }
 
+export interface InboxProposal {
+  id: string;
+  documentId: string;
+  documentTitle: string;
+  originalFileName: string;
+  proposedCaseId?: string;
+  proposedSubfolder: CaseSubfolder;
+  confidence: number;
+  rationale: string;
+  clarificationQuestion?: string;
+  isReviewed: boolean;
+}
+
+export interface DiskOperationHistoryEntry {
+  id: string;
+  timestamp: string;
+  action: 'move' | 'create_folder' | 'rename' | 'link_document' | 'split_pdf';
+  documentId?: string;
+  sourcePath: string;
+  destinationPath: string;
+  description: string;
+  canUndo: boolean;
+}
+
+export interface GeminiDisclosurePayload {
+  operationName: string;
+  recipient: string;
+  targetEndpoint: string;
+  purpose: string;
+  dataScope: {
+    field: string;
+    value: string;
+    isRedacted: boolean;
+    isRequired: boolean;
+  }[];
+  exactJsonPayload: string;
+  userConsentGranted: boolean;
+}
+
 export interface VaultManifest {
   manifestVersion: string;
   vaultId: string;
+  workspacePath?: string;
   createdAt: string;
   cases: Case[];
   documents: DocumentRecord[];
@@ -269,5 +435,8 @@ export interface VaultManifest {
   legalSources: LegalSource[];
   legalAnalyses: LegalAnalysis[];
   letters: LetterDraft[];
+  relations: DocumentRelation[];
+  inboxProposals: InboxProposal[];
+  history: DiskOperationHistoryEntry[];
   exportedAt?: string;
 }
